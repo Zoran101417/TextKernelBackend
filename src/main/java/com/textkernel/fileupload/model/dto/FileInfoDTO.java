@@ -2,12 +2,13 @@ package com.textkernel.fileupload.model.dto;
 
 import com.textkernel.fileupload.model.FileInfo;
 
+import java.util.HashMap;
 import java.util.List;
 
 public class FileInfoDTO {
 
     private List<FileInfo> fileInfoList;
-    private String plainText;
+    private HashMap plainText;
 
     public List<FileInfo> getFileInfoList() {
         return fileInfoList;
@@ -17,11 +18,11 @@ public class FileInfoDTO {
         this.fileInfoList = fileInfoList;
     }
 
-    public String getPlainText() {
+    public HashMap getPlainText() {
         return plainText;
     }
 
-    public void setPlainText(String plainText) {
+    public void setPlainText(HashMap plainText) {
         this.plainText = plainText;
     }
 }

@@ -1,9 +1,11 @@
 package com.textkernel.fileupload.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.textkernel.fileupload.FileStorageProperties;
 import com.textkernel.fileupload.exception.FileStorageException;
 import com.textkernel.fileupload.exception.MyFileNotFoundException;
 import com.textkernel.fileupload.model.FileInfo;
+import com.textkernel.fileupload.model.dto.FileInfoDTO;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -21,8 +23,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FileStorageService {
@@ -43,7 +47,7 @@ public class FileStorageService {
 
 
     //	function to store the file
-    public List<FileInfo> storeFile(MultipartFile file) {
+    public FileInfoDTO storeFile(MultipartFile file) {
 
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
         try {
@@ -51,55 +55,48 @@ public class FileStorageService {
             // The idea here was to get plain text from OCR API for the uploaded file and then to save the file in directory,
             // get all uploaded files and return list of uploaded files and plain text for the last uploaded file
             // But unfortunately i get error from api : Please check if the file has sufficient permissions and allows access and is not corrupt.
-            String plainText = getPlainText(fileName);
+//            String plainText = getPlainText(fileName);
+
+            // ^ THIS ISSUE IT IS SOLVED (I FIND A SOLUTION) :)
+
+            HashMap result = getPlainText(fileName);
 
             Path targetLocation = this.fileStorageLocationPath.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation,StandardCopyOption.REPLACE_EXISTING);
 
             // get all uploaded files
-            return getUploadedFiles();
+            List<FileInfo> allFiles = getUploadedFiles();
+            FileInfoDTO fileInfoDTO = new FileInfoDTO();
+            fileInfoDTO.setFileInfoList(allFiles);
+            fileInfoDTO.setPlainText(result);
+
+            return fileInfoDTO;
 
         } catch(Exception ex) {
             throw new FileStorageException("Could not store file "+fileName + ". Please try again!",ex);
         }
     }
 
-    // function go get plain text from OCR API
-    private String getPlainText(String fileName) throws Exception {
+    // function go get plain text from OCR API (it is not in use)
+    public HashMap getPlainText(String fileName) throws Exception {
 
-        URL obj = new URL("https://api.ocr.space/parse/image"); // OCR API Endpoints
-        HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
 
-        //add request header
-        con.setRequestMethod("POST");
-        con.setRequestProperty("User-Agent", "Mozilla/5.0");
-        con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        String commandCURL  = "curl -H apikey:5b61727e1588957 --form file=@"+fileName+" --form language=eng --form filetype=pdf --form isOverlayRequired=true https://api.ocr.space/Parse/Image";
+        ProcessBuilder processBuilderCURL = new ProcessBuilder(commandCURL.split(" "));
 
-        JSONObject postDataParams = new JSONObject();
+        processBuilderCURL.directory(new File("D:\\React\\fileupload\\upload"));
+        Process process1 = processBuilderCURL.start();
 
-        postDataParams.put("apikey", "5b61727e1588957"); //Add your Registered API key
-        postDataParams.put("isOverlayRequired", false);
-        postDataParams.put("url", fileName);
-        postDataParams.put("language", "eng");
-        postDataParams.put("filetype", "PDF");
+        String result3 = new BufferedReader(
+                new InputStreamReader(process1.getInputStream()))
+                .lines()
+                .collect(Collectors.joining("\n"));
+        HashMap result =
+                new ObjectMapper().readValue(result3, HashMap.class);
 
-            // Send post request
-            con.setDoOutput(true);
-            DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-            wr.writeBytes(getPostDataString(postDataParams));
-            wr.flush();
-            wr.close();
+        int exitCode = process1.exitValue();
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-
-        return String.valueOf(response);
+        return result;
     }
 
     private String getPostDataString(JSONObject params) throws Exception {

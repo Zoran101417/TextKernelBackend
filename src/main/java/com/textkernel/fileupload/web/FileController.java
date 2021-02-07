@@ -1,6 +1,7 @@
 package com.textkernel.fileupload.web;
 
 import com.textkernel.fileupload.model.FileInfo;
+import com.textkernel.fileupload.model.dto.FileInfoDTO;
 import com.textkernel.fileupload.service.ApiResponse;
 import com.textkernel.fileupload.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -26,16 +28,39 @@ public class FileController {
 
     @PutMapping(path ="/upload")
     public ApiResponse<?> uploadFile(@RequestParam("file") MultipartFile file){
-        List<FileInfo> fileName = fileStorageService.storeFile(file);
+        FileInfoDTO fileName = null;
+        try {
+             fileName = fileStorageService.storeFile(file);
+
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.NOT_ACCEPTABLE.value(), "Information updated unsuccessfully", null);
+        }
 
         return new ApiResponse<>(HttpStatus.OK.value(), "Information updated successfully", fileName);
     }
 
     @GetMapping(path = "getUploadedFiles")
     public ApiResponse<?> getUploadedFiles() {
-        List<FileInfo> uploadedFiles = fileStorageService.getUploadedFiles();
+        List<FileInfo> uploadedFiles = null;
+        try {
+            uploadedFiles = fileStorageService.getUploadedFiles();
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.NOT_ACCEPTABLE.value(), "Information fetch unsuccessfully", null);
+        }
 
         return new ApiResponse<>(HttpStatus.OK.value(), "Information fetch successfully", uploadedFiles);
+    }
+
+    @GetMapping(path = "/getPlainTextForFile")
+    public ApiResponse<?> getPlainTextForFile(@RequestParam("fileName") String fileName) throws Exception {
+        HashMap plainText = null;
+        try {
+            plainText = fileStorageService.getPlainText(fileName);
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.NOT_ACCEPTABLE.value(), "Information fetch unsuccessfully", null);
+        }
+
+        return new ApiResponse<>(HttpStatus.OK.value(), "Information fetch successfully", plainText);
     }
 
     @GetMapping(path = "/{fileName:.+}")
