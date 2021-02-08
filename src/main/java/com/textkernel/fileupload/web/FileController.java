@@ -27,10 +27,10 @@ public class FileController {
     private FileStorageService fileStorageService;
 
     @PutMapping(path ="/upload")
-    public ApiResponse<?> uploadFile(@RequestParam("file") MultipartFile file){
+    public ApiResponse<?> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("extension") String extension){
         FileInfoDTO fileName = null;
         try {
-             fileName = fileStorageService.storeFile(file);
+             fileName = fileStorageService.storeFile(file, extension);
 
         } catch (Exception e) {
             return new ApiResponse<>(HttpStatus.NOT_ACCEPTABLE.value(), "Information updated unsuccessfully", null);
@@ -52,10 +52,10 @@ public class FileController {
     }
 
     @GetMapping(path = "/getPlainTextForFile")
-    public ApiResponse<?> getPlainTextForFile(@RequestParam("fileName") String fileName) throws Exception {
+    public ApiResponse<?> getPlainTextForFile(@RequestParam("fileName") String fileName, @RequestParam("extension") String extension) throws Exception {
         HashMap plainText = null;
         try {
-            plainText = fileStorageService.getPlainText(fileName);
+            plainText = fileStorageService.getPlainText(fileName, extension);
         } catch (Exception e) {
             return new ApiResponse<>(HttpStatus.NOT_ACCEPTABLE.value(), "Information fetch unsuccessfully", null);
         }

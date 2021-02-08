@@ -47,22 +47,16 @@ public class FileStorageService {
 
 
     //	function to store the file
-    public FileInfoDTO storeFile(MultipartFile file) {
+    public FileInfoDTO storeFile(MultipartFile file, String extension) {
 
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
         try {
 
-            // The idea here was to get plain text from OCR API for the uploaded file and then to save the file in directory,
-            // get all uploaded files and return list of uploaded files and plain text for the last uploaded file
-            // But unfortunately i get error from api : Please check if the file has sufficient permissions and allows access and is not corrupt.
-//            String plainText = getPlainText(fileName);
-
-            // ^ THIS ISSUE IT IS SOLVED (I FIND A SOLUTION) :)
-
-            HashMap result = getPlainText(fileName);
-
             Path targetLocation = this.fileStorageLocationPath.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation,StandardCopyOption.REPLACE_EXISTING);
+
+            HashMap result = getPlainText(fileName, extension);
+
 
             // get all uploaded files
             List<FileInfo> allFiles = getUploadedFiles();
@@ -78,10 +72,10 @@ public class FileStorageService {
     }
 
     // function go get plain text from OCR API (it is not in use)
-    public HashMap getPlainText(String fileName) throws Exception {
+    public HashMap getPlainText(String fileName, String extension) throws Exception {
 
 
-        String commandCURL  = "curl -H apikey:5b61727e1588957 --form file=@"+fileName+" --form language=eng --form filetype=pdf --form isOverlayRequired=true https://api.ocr.space/Parse/Image";
+        String commandCURL  = "curl -H apikey:5b61727e1588957 --form file=@"+fileName+" --form language=eng --form filetype="+extension+" --form isOverlayRequired=true https://api.ocr.space/Parse/Image";
         ProcessBuilder processBuilderCURL = new ProcessBuilder(commandCURL.split(" "));
 
         processBuilderCURL.directory(new File("D:\\React\\fileupload\\upload"));
